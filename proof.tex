@@ -1,0 +1,93 @@
+\documentclass[a4paper]{article}
+\synctex=1
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{parskip}
+\DeclareMathOperator{\dist}{dist}
+\newcommand{\PQ}{\ensuremath{\mathsf{Q}}}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{claim}{Claim}
+
+\usepackage[longend,vlined]{algorithm2e}
+%\renewcommand\AlCapFnt{\normalfont\small}
+%\renewcommand\AlCapNameSty{\normalfont\small}
+
+
+\begin{document}
+
+We do a Dijkstra-like dynamic programming.
+
+Let $\dist(k', p, v) = \ell$ denote the fact that there is a walk from $s$ to
+$v$ using $k'$ free edges, with parity $p \in \{0,1\}$ with length
+$\ell$.
+
+
+\begin{algorithm}[H]
+  \DontPrintSemicolon
+  Create a priority queue $\PQ$, and put $(0, 0, 0, s)$ into \PQ\;
+  \While{$\PQ$}{
+    pop $(\ell, k', p, v)$\;
+    \If{$\dist(k', p, v) < \ell$}{
+      continue  \tcp*[f]{discard sub-optimal vector}
+    }
+    $\dist(k', p, v) \gets \ell$
+    \For{$u \in N_G(v)$}{
+      \PQ.push $(\ell + w(u,v), k', \overline{p}, u)$\;
+      \PQ.push $(\ell, k'+1, \overline{p}, u)$ if $k' < k$\;
+    }
+  }
+\end{algorithm}
+
+\begin{claim}
+  The algorithm pops $v$ at most $4 k \deg(v)$ many times.
+\end{claim}
+
+\begin{claim}
+  When the priority queue is empty, $\dist(k', p, v) = \ell$ is correct
+  for every $k', p, v$.
+\end{claim}
+\begin{proof}
+  Clearly $\dist(0, 0, s) = 0$ is correct.  Suppose for contradiction that the
+  claim is false, and let $(\ell, k', p, v)$ be the lexicographically smallest
+  erroneous vector, i.e., that we compute $\dist(k', p, v) = \ell' \neq \ell$,
+  and that there is an $s$-$v$-walk of length $\ell$ using $k'$ free edges with
+  parity $p$.
+
+  To finish the proof, consider the walk $W$ from $s$ to $v$ of length $\ell$ that
+  uses $k'$ free edges with parity $p$.
+  %
+  Notice that if $\ell' > \ell$ the vertex in $u \in W$ that precedes $v$ has
+  either
+  \begin{itemize}
+  \item vector $(\ell - w(u,v), k', \overline{p}, u)$, or
+  \item vector $(\ell, k' - 1, \overline{p}, u)$,
+  \end{itemize}
+  both of which are lexicographically smaller than $(\ell, k', p, v)$, hence
+  they are correctly computed.  But then $(\ell, k', p, v)$ must be put into
+  the priority queue, and hence correctly computed.
+
+  We conclude that $\ell' < \ell$, i.e., we find a \emph{shorter} path than
+  possible; we underestimate the cost of the walk.
+
+  Let $(\ell'', k'', \overline p, u)$ be the vector popped before adding
+  $(\ell, k', p, v)$ to the queue.  Notice that again, either $\ell'' = \ell$
+  and $k'' < k'$, or $\ell'' < \ell$ and $k'' = k$, and by the assumption that
+  $(\ell'', k'', \overline p, u)$ therefore is correct,
+  $\dist(k', p, v) = \ell$, which contradicts our assumption.
+\end{proof}
+
+\begin{lemma}
+  The overall running time is $O(nk \log n)$.
+\end{lemma}
+\begin{proof}
+  From the claim above, each vertex is popped at most $4k\deg(v)$ many times,
+  hence each vertex is pushed at most $4k\deg(v)$ times.  In total
+  $8km = O(nk)$ many push and pop operations are performed, each running in
+  time $O(\log nk) = O(\log n)$.  Since the remaining computations are all
+  $O(1)$, the total running time is $O(nk \log n)$.
+\end{proof}
+\end{document}
