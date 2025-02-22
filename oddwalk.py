@@ -40,7 +40,7 @@ def plot_graph(G, path, pos):
     plt.show()
 
 
-def cheapest_walk(G, s, k):
+def cheapest_parity_walk(G, s, k):
     opt = defaultdict(lambda: 10**8)
     PQ = []
 
@@ -111,6 +111,8 @@ if __name__ == "__main__":
     t = int(sys.argv[3])
     K = int(sys.argv[4])
     G, pos = read_graph(fname)
-    d = cheapest_walk(G, s, K)
-    the_path = list(backtrack(G, s, t, K, 1, d))
-    plot_graph(G, the_path, pos)
+    d = cheapest_parity_walk(G, s, K)
+    p = 1  # parity: odd=1, even=0
+    path = list(backtrack(G, s, t, K, p, d))
+    assert (len(path) - 1) % 2 == p
+    plot_graph(G, path, pos)
