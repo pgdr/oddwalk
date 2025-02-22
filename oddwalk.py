@@ -78,6 +78,10 @@ def subdivide(G, pos, dont=[]):
     subdivision = []
     for e in dont:
         if e not in G.edges():
+            if len(G.edges()) <= 10:
+                print(sorted(G.edges()))
+            else:
+                print(sorted(G.edges())[:10], "...")
             raise ValueError("Not an edge in dont: ", e)
     for u, v in G.edges():
         if (u, v) in dont or (v, u) in dont:
@@ -141,14 +145,18 @@ def backtrack(G, s, t, k, p, opt):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
-        exit("Usage: oddwalk file.in s t k")
+    if len(sys.argv) != 6:
+        exit("Usage: oddwalk file.in s t e")
     fname = sys.argv[1]
     s = int(sys.argv[2])
     t = int(sys.argv[3])
-    K = int(sys.argv[4])
+    b1 = int(sys.argv[4])
+    b2 = int(sys.argv[5])
+
+    K = 0
+
     G, pos = read_graph(fname)
-    dont = [sorted(G.edges())[0][:2]]
+    dont = [(b1, b2)]
     print(dont)
     G = subdivide(G, pos, dont=dont)
     d = cheapest_parity_walk(G, s, K)
