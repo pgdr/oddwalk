@@ -115,6 +115,7 @@ if __name__ == "__main__":
     G, pos = read_graph(fname)
     d = cheapest_parity_walk(G, s, K)
     p = 1  # parity: odd=1, even=0
-    path = list(backtrack(G, s, t, K, p, d))
+    path = list(reversed(list(backtrack(G, s, t, K, p, d))))
+    print(path)
     assert (len(path) - 1) % 2 == p
     plot_graph(G, path, pos)
