@@ -85,6 +85,8 @@ def read_graph(fname):
             edges.append((int(u), int(v), float(w)))
     G = nx.Graph()
     for u, v, w in edges:
+        if w <= 0:
+            raise ValueError("Weights must be positive")
         G.add_edge(u, v, weight=w)
     return G, pos
 
