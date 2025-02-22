@@ -6,22 +6,26 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 
-def plot_graph(G, path, pos):
+def path_edge(path, e):
+    for i in range(len(path) - 1):
+        v1, v2 = (path[i], path[i + 1])
+        if e in ((v1, v2), (v2, v1)):
+            return True
+    return False
+
+
+def plot_graph(G, path, pos, green):
     plt.figure(figsize=(10, 8))
 
     node_color = ["red" if node in path else "lightblue" for node in G.nodes()]
-    edge_color = [
-        (
-            "red"
-            if (
-                u in path
-                and v in path
-                and ((u, v) in zip(path, path[1:]) or (v, u) in zip(path, path[1:]))
-            )
-            else "lightgray"
-        )
-        for u, v in G.edges()
-    ]
+    edge_color = []
+    for u, v in G.edges():
+        if (u, v) in green or (v, u) in green:
+            edge_color.append("green")
+        elif path_edge(path, (u, v)):
+            edge_color.append("red")
+        else:
+            edge_color.append("lightgray")
 
     nx.draw(
         G,
@@ -36,11 +40,12 @@ def plot_graph(G, path, pos):
     # edge_labels = {(u, v): f'{d["weight"]:.2f}' for u, v, d in G.edges(data=True)}
     # nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
 
-    plt.title(sys.argv[1])
+    plt.title("Odd walk")
     plt.show()
 
 
 def cheapest_parity_walk(G, s, k):
+    """Computes the cheapest parity walk with k free edges."""
     opt = defaultdict(lambda: 10**8)
     PQ = []
 
@@ -62,6 +67,34 @@ def cheapest_parity_walk(G, s, k):
                 heapq.heappush(PQ, (ell, k_prime + 1, 1 - p, u))
 
     return opt
+
+
+def interpolate(p1, p2):
+    return ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
+
+
+def subdivide(G, pos, dont=[]):
+    G = G.copy()
+    subdivision = []
+    for e in dont:
+        if e not in G.edges():
+            raise ValueError("Not an edge in dont: ", e)
+    for u, v in G.edges():
+        if (u, v) in dont or (v, u) in dont:
+            continue
+        ux, uy = pos[u]
+        vx, vy = pos[v]
+        s = interpolate((ux, uy), (vx, vy))
+        subdivision.append((s, u, v))
+    n = len(G.nodes())
+    for s, u, v in subdivision:
+        w = G.edges[u, v]["weight"] / 2
+        G.remove_edge(u, v)
+        G.add_edge(n, u, weight=int(1 + w))
+        G.add_edge(n, v, weight=int(1 + w))
+        pos[n] = s
+        n += 1
+    return G
 
 
 def read_graph(fname):
@@ -87,22 +120,24 @@ def read_graph(fname):
     for u, v, w in edges:
         if w <= 0:
             raise ValueError("Weights must be positive")
-        G.add_edge(u, v, weight=w)
+        G.add_edge(u, v, weight=int(1 + w))
     return G, pos
 
 
 def backtrack(G, s, t, k, p, opt):
     np = 1 - p
     yield t
-    if s == t:
+    if s == t and p == 0:
         return
     l = opt[k, p, t]
     for v in G[t]:
         w = G.edges[v, t]["weight"]
-        if opt[k - 1, np, v] <= (l + 0.1):
+        if opt[k - 1, np, v] <= (l + 0.001):
             yield from backtrack(G, s, v, k - 1, np, opt)
-        elif opt[k, np, v] <= (l - w + 0.1):
+            break
+        elif opt[k, np, v] <= (l - w + 0.001):
             yield from backtrack(G, s, v, k, np, opt)
+            break
 
 
 if __name__ == "__main__":
@@ -113,9 +148,12 @@ if __name__ == "__main__":
     t = int(sys.argv[3])
     K = int(sys.argv[4])
     G, pos = read_graph(fname)
+    dont = [sorted(G.edges())[0][:2]]
+    print(dont)
+    G = subdivide(G, pos, dont=dont)
     d = cheapest_parity_walk(G, s, K)
     p = 1  # parity: odd=1, even=0
     path = list(reversed(list(backtrack(G, s, t, K, p, d))))
     print(path)
     assert (len(path) - 1) % 2 == p
-    plot_graph(G, path, pos)
+    plot_graph(G, path, pos, green=dont)
