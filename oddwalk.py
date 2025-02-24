@@ -144,24 +144,29 @@ def backtrack(G, s, t, k, p, opt):
             break
 
 
+def get_edges_in_path(G, s, t):
+    path = nx.shortest_path(G, source=s, target=t)
+    return list(zip(path[:-1], path[1:]))
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 6:
-        exit("Usage: oddwalk file.in s t e")
+    if len(sys.argv) != 5:
+        print("Find a cycle containing v using odd number of s-t-path edges")
+        exit("Usage: oddwalk file.in s t v")
     fname = sys.argv[1]
     s = int(sys.argv[2])
     t = int(sys.argv[3])
-    b1 = int(sys.argv[4])
-    b2 = int(sys.argv[5])
+    v = int(sys.argv[4])
 
     K = 0
 
     G, pos = read_graph(fname)
-    dont = [(b1, b2)]
+    dont = get_edges_in_path(G, s, t)
     print(dont)
     G = subdivide(G, pos, dont=dont)
-    d = cheapest_parity_walk(G, s, K)
+    d = cheapest_parity_walk(G, v, K)
     p = 1  # parity: odd=1, even=0
-    path = list(reversed(list(backtrack(G, s, t, K, p, d))))
+    path = list(reversed(list(backtrack(G, v, v, K, p, d))))
     print(path)
     assert (len(path) - 1) % 2 == p
     plot_graph(G, path, pos, green=dont)
